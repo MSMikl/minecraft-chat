@@ -23,6 +23,7 @@ async def get_sender_connection(host, port, name='Default', key=None):
         writer.write('\n'.encode('UTF-8'))
         logger.debug(f"sent {name}")
         await writer.drain()
+        await reader.readline()
     else:
         writer.write(key.encode('UTF-8'))
         logger.debug(f"sent {key}")
@@ -44,7 +45,7 @@ async def main():
     formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
     file_logger.setFormatter(formatter)
     logger.addHandler(file_logger)
-    argparser = configargparse.ArgParser(default_config_files=['config.ini'])
+    argparser = configargparse.ArgParser(default_config_files=['sender_config.ini'])
     argparser.add('-H', '--host', required=True, help='host')
     argparser.add('-s', '--send_port', required=True, help='port to send messages')
     argparser.add('-k,', '--key', help="user's account hash")
@@ -59,7 +60,10 @@ async def main():
     )
     args.name = nickname
     args.key = key
-    argparser.write_config_file(args, ['config.ini'])
+    config_to_write = [f"{key} = {value}\n" for key, value in args._get_kwargs()]
+    with open('sender_config.ini', 'w') as file:
+        file.writelines(config_to_write)
+
 
     message = 'Hello World! \n\n'
     writer.write(message.encode('UTF-8'))
