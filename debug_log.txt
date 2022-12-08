@@ -1,0 +1,54 @@
+recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+sent 5896f136-76f6-11ed-8c47-0242ac110002
+sent Hello World! 
+
+
+recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+sent 5896f136-76f6-11ed-8c47-0242ac110002
+{"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+sent Hello World! 
+
+
+recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+sent 5896f136-76f6-11ed-8c47-0242ac110002
+recieved {"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+sent Hello World! 
+
+
+DEBUG:recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+DEBUG:sent 5896f136-76f6-11ed-8c47-0242ac110002
+DEBUG:recieved {"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+DEBUG:sent Hello World! 
+
+
+recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+sent 5896f136-76f6-11ed-8c47-0242ac110002
+recieved {"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+sent Hello World! 
+
+
+recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+sent 5896f136-76f6-11ed-8c47-0242ac110002
+recieved {"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+sent Hello World! 
+
+
+DEBUG:sender:recieved Hello %username%! Enter your personal hash or leave it empty to create new account.
+
+DEBUG:sender:sent 5896f136-76f6-11ed-8c47-0242ac110002
+DEBUG:sender:recieved {"nickname": "Youthful Silly Mikl", "account_hash": "5896f136-76f6-11ed-8c47-0242ac110002"}
+
+DEBUG:sender:sent Hello World! 
+
+
