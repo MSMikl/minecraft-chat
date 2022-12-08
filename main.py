@@ -5,7 +5,6 @@ import datetime
 
 async def main():
     reader, writer = await asyncio.open_connection('minechat.dvmn.org', 5000)
-    message = 'hello'
     while True:
         async with aiofiles.open('log.txt', 'a') as file:
             data = await reader.readline()
