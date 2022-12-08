@@ -2,9 +2,15 @@ import aiofiles
 import asyncio
 import datetime
 
+import configargparse
+
 
 async def main():
-    reader, writer = await asyncio.open_connection('minechat.dvmn.org', 5000)
+    argparser = configargparse.ArgParser(default_config_files=['config.ini'])
+    argparser.add('-H', '--host', required=True, help='host')
+    argparser.add('-p', '--port', required=True, help='port')
+    args = argparser.parse_args()
+    reader, writer = await asyncio.open_connection(args.host, int(args.port))
     while True:
         async with aiofiles.open('log.txt', 'a') as file:
             data = await reader.readline()
