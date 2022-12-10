@@ -8,6 +8,9 @@ import configargparse
 logger = logging.getLogger('sender')
 
 
+class WrongHash(Exception):
+    pass
+
 async def get_sender_connection(host, port, name='Default', key=None):
     reader, writer = await asyncio.open_connection(host, port)
     answer = await reader.readline()
@@ -33,6 +36,8 @@ async def get_sender_connection(host, port, name='Default', key=None):
     print(answer.decode('UTF-8'))
     logger.debug(f"recieved {answer.decode('UTF-8')}")
     user_data = json.loads(answer)
+    if not user_data:
+        raise WrongHash
     nickname = user_data['nickname']
     key = user_data['account_hash']
     return writer, nickname, key
@@ -51,13 +56,16 @@ async def main():
     argparser.add('-k,', '--key', help="user's account hash")
     argparser.add('-n', '--name', help="user's nickname")
     args, _ = argparser.parse_known_args()
-
-    writer, nickname, key = await get_sender_connection(
-        args.host,
-        args.send_port,
-        name=args.name,
-        key=args.key
-    )
+    try:
+        writer, nickname, key = await get_sender_connection(
+            args.host,
+            args.send_port,
+            name=args.name,
+            key=args.key
+        )
+    except WrongHash:
+        print('Неизвестный токен. Проверьте его или удалите из конфигурациии для повторной регистрации.')
+        return
     args.name = nickname
     args.key = key
     config_to_write = [f"{key} = {value}\n" for key, value in args._get_kwargs()]
