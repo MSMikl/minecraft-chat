@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import regex
 
 import configargparse
 
@@ -63,9 +62,10 @@ async def main():
     logger.addHandler(file_logger)
     argparser = configargparse.ArgParser(default_config_files=['config.ini'])
     argparser.add('-H', '--host', required=True, help='host')
-    argparser.add('-s', '--send_port', required=True, help='port to send messages')
+    argparser.add('-p', '--send_port', required=True, help='port to send messages')
     argparser.add('-k,', '--key', help="user's account hash")
     argparser.add('-n', help="user's nickname")
+    argparser.add('message', help='Текст сообщения')
     args, _ = argparser.parse_known_args()
     reader, writer = await asyncio.open_connection(args.host, args.send_port)
     answer = await reader.readline()
@@ -78,7 +78,6 @@ async def main():
     args.key = key
     argparser.write_config_file(args, ['config.ini'])
 
-    message = 'Hello world'
-    await send_message(writer, message)
+    await send_message(writer, args.message)
 
 asyncio.run(main())
