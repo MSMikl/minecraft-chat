@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import regex
 
 import configargparse
 
@@ -13,18 +14,21 @@ class WrongHash(Exception):
 
 
 async def send_message(writer, message):
+    print(fr"{message}")
     writer.write(message.encode('UTF-8'))
+    writer.write('\n\n'.encode('UTF-8'))
     logger.debug(f"sent {message}")
     await writer.drain()
 
 
 async def register(reader, writer, name):
+    print(name)
     writer.write('\n'.encode('UTF-8'))
     await writer.drain()
     answer = await reader.read(1000)
     logger.debug(f"recieved {answer.decode('UTF-8')}")
     print(answer.decode('UTF-8'))
-    writer.write(name.encode('UTF-8'))
+    writer.write(fr"{name}".encode('UTF-8'))
     writer.write('\n'.encode('UTF-8'))
     logger.debug(f"sent {name}")
     await writer.drain()
@@ -74,7 +78,7 @@ async def main():
     args.key = key
     argparser.write_config_file(args, ['config.ini'])
 
-    message = 'Hello World! \n\n'
+    message = 'Hello world'
     await send_message(writer, message)
 
 asyncio.run(main())
