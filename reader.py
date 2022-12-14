@@ -26,8 +26,8 @@ async def main():
         reader, _ = connection
         while True:
             async with aiofiles.open(args.logs, 'a') as file:
-                data = await reader.read(1000)
-                text_line = f"[{datetime.datetime.now().strftime('%d.%m.%y %H:%M')}] {data.decode('UTF-8')}"
+                message = await reader.read(1000)
+                text_line = f"[{datetime.datetime.now().strftime('%d.%m.%y %H:%M')}] {message.decode('UTF-8')}"
                 await file.write(text_line)
                 print(text_line)
 
