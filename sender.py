@@ -13,15 +13,14 @@ class WrongHash(Exception):
 
 
 async def send_message(writer, message):
-    print(fr"{message}")
-    writer.write(message.encode('UTF-8'))
+    text = " ".join(message)
+    writer.write(text.encode('UTF-8'))
     writer.write('\n\n'.encode('UTF-8'))
-    logger.debug(f"sent {message}")
+    logger.debug(f"sent {text}")
     await writer.drain()
 
 
 async def register(reader, writer, name):
-    print(name)
     writer.write('\n'.encode('UTF-8'))
     await writer.drain()
     answer = await reader.read(1000)
@@ -65,7 +64,7 @@ async def main():
     argparser.add('-p', '--send_port', required=True, help='port to send messages')
     argparser.add('-k,', '--key', help="user's account hash")
     argparser.add('-n', help="user's nickname")
-    argparser.add('message', help='Текст сообщения')
+    argparser.add('message', nargs='*', help='Текст сообщения', default='')
     args, _ = argparser.parse_known_args()
     reader, writer = await asyncio.open_connection(args.host, args.send_port)
     answer = await reader.readline()
