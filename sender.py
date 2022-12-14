@@ -4,6 +4,7 @@ import logging
 
 import configargparse
 
+from reader import get_connection
 
 logger = logging.getLogger('sender')
 
@@ -66,18 +67,19 @@ async def main():
     argparser.add('-n', help="user's nickname")
     argparser.add('message', nargs='*', help='Текст сообщения', default='')
     args, _ = argparser.parse_known_args()
-    reader, writer = await asyncio.open_connection(args.host, args.send_port)
-    answer = await reader.readline()
-    logger.debug(f"recieved {answer.decode('UTF-8')}")
-    print(answer.decode('UTF-8'))
-    if args.n:
-        writer, key = await register(reader, writer, args.n)
-    else:
-        writer, key = await authenticate(reader, writer, args.key)
-    args.key = key
-    argparser.write_config_file(args, ['config.ini'])
+    async with get_connection(args.host, args.send_port) as connection:
+        reader, writer = connection
+        answer = await reader.readline()
+        logger.debug(f"recieved {answer.decode('UTF-8')}")
+        print(answer.decode('UTF-8'))
+        if args.n:
+            writer, key = await register(reader, writer, args.n)
+        else:
+            writer, key = await authenticate(reader, writer, args.key)
+        args.key = key
+        argparser.write_config_file(args, ['config.ini'])
 
-    await send_message(writer, args.message)
+        await send_message(writer, args.message)
 
 
 if __name__ == '__main__':
