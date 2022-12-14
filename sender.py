@@ -26,7 +26,6 @@ async def register(reader, writer, name):
     await writer.drain()
     answer = await reader.read(1000)
     logger.debug(f"recieved {answer.decode('UTF-8')}")
-    print(answer.decode('UTF-8'))
     writer.write(fr"{name}".encode('UTF-8'))
     writer.write('\n'.encode('UTF-8'))
     logger.debug(f"sent {name}")
@@ -71,7 +70,6 @@ async def main():
         reader, writer = connection
         answer = await reader.readline()
         logger.debug(f"recieved {answer.decode('UTF-8')}")
-        print(answer.decode('UTF-8'))
         if args.n:
             writer, key = await register(reader, writer, args.n)
         else:
