@@ -79,4 +79,6 @@ async def main():
 
     await send_message(writer, args.message)
 
-asyncio.run(main())
+
+if __name__ == '__main__':
+    asyncio.run(main())
