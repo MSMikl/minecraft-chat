@@ -37,7 +37,7 @@ async def register(reader, writer, name):
     if not user_data:
         raise WrongHash('Неизвестный токен. Проверьте его или зарегистрируйтесь заново')
     key = user_data['account_hash']
-    return writer, key
+    return key
 
 
 async def authenticate(reader, writer, key):
@@ -49,7 +49,7 @@ async def authenticate(reader, writer, key):
     logger.debug(f"recieved {answer.decode('UTF-8')}")
     user_data = json.loads(answer)
     key = user_data['account_hash']
-    return writer, key
+    return key
 
 
 async def main():
@@ -71,9 +71,9 @@ async def main():
         answer = await reader.readline()
         logger.debug(f"recieved {answer.decode('UTF-8')}")
         if args.n:
-            writer, key = await register(reader, writer, args.n)
+            key = await register(reader, writer, args.n)
         else:
-            writer, key = await authenticate(reader, writer, args.key)
+            key = await authenticate(reader, writer, args.key)
         args.key = key
         argparser.write_config_file(args, ['config.ini'])
 
