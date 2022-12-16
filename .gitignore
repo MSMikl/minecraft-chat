@@ -152,6 +152,4 @@ cython_debug/
 #.idea/
 log.txt
 logs.txt
-config.ini
 debug_log.txt
-*.ini
