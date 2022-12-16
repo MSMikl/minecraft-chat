@@ -4,7 +4,7 @@ import logging
 
 import configargparse
 
-from reader import get_connection
+from connection_tools import get_connection
 
 logger = logging.getLogger('sender')
 
