@@ -14,7 +14,7 @@ class WrongHash(Exception):
     pass
 
 
-async def pass_lines(writer, num_lines=1):
+async def send_empty_lines(writer, num_lines=1):
     writer.write(('\n' * num_lines).encode('UTF-8'))
     await writer.drain()
 
@@ -22,16 +22,16 @@ async def pass_lines(writer, num_lines=1):
 async def send_message(writer, message):
     text = " ".join(message)
     writer.write(text.encode('UTF-8'))
-    await pass_lines(writer, 2)
+    await send_empty_lines(writer, 2)
     logger.debug(f"sent {text}")
 
 
 async def register(reader, writer, name):
-    await pass_lines(writer)
+    await send_empty_lines(writer)
     answer = await reader.read(1000)
     logger.debug(f"recieved {answer.decode('UTF-8')}")
     writer.write(fr"{name}".encode('UTF-8'))
-    await pass_lines(writer)
+    await send_empty_lines(writer)
     logger.debug(f"sent {name}")
     await reader.readline()
     answer = await reader.readline()
@@ -46,7 +46,7 @@ async def register(reader, writer, name):
 async def authenticate(reader, writer, key):
     writer.write(key.encode('UTF-8'))
     logger.debug(f"sent {key}")
-    await pass_lines(writer)
+    await send_empty_lines(writer)
     answer = await reader.readline()
     logger.debug(f"recieved {answer.decode('UTF-8')}")
     user_data = json.loads(answer)
