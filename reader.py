@@ -4,16 +4,8 @@ import datetime
 
 import configargparse
 
-from contextlib import asynccontextmanager
+from connection_tools import get_connection
 
-@asynccontextmanager
-async def get_connection(host, port):
-    reader, writer = await asyncio.open_connection(host, port)
-    try:
-        yield reader, writer
-    finally:
-        writer.close()
-        await writer.wait_closed()
 
 async def main():
     argparser = configargparse.ArgParser(default_config_files=['config.ini'])
