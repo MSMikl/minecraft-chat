@@ -1,86 +1,85 @@
 import asyncio
 import json
 import logging
-
-import configargparse
-
-from connection_tools import get_connection
+import time
 
 
-logger = logging.getLogger('sender')
+logger = logging.getLogger('chat')
 
 
 class WrongHash(Exception):
     pass
 
 
-async def send_empty_lines(writer, num_lines=1):
-    writer.write(('\n' * num_lines).encode('UTF-8'))
-    await writer.drain()
+class Sender:
+    def __init__(self, host, port, name='Default', token=None, send_queue=None):
+        self.host = host
+        self.port = port
+        self.name = name
+        self.nickname = None
+        self.token = token
+        self.reader = None
+        self.writer = None
+        self.send_queue = send_queue
+        self.watchdog_queue = None
 
+    async def cleanup(self):
+        self.writer.close()
+        await self.writer.wait_closed()
 
-async def send_message(writer, message):
-    text = " ".join(message)
-    writer.write(text.encode('UTF-8'))
-    await send_empty_lines(writer, 2)
-    logger.debug(f"sent {text}")
-
-
-async def register(reader, writer, name):
-    await send_empty_lines(writer)
-    answer = await reader.read(1000)
-    logger.debug(f"recieved {answer.decode('UTF-8')}")
-    writer.write(fr"{name}".encode('UTF-8'))
-    await send_empty_lines(writer)
-    logger.debug(f"sent {name}")
-    await reader.readline()
-    answer = await reader.readline()
-    logger.debug(f"recieved {answer.decode('UTF-8')}")
-    user_data = json.loads(answer)
-    if not user_data:
-        raise WrongHash('Неизвестный токен. Проверьте его или зарегистрируйтесь заново')
-    key = user_data['account_hash']
-    return key
-
-
-async def authenticate(reader, writer, key):
-    writer.write(key.encode('UTF-8'))
-    logger.debug(f"sent {key}")
-    await send_empty_lines(writer)
-    answer = await reader.readline()
-    logger.debug(f"recieved {answer.decode('UTF-8')}")
-    user_data = json.loads(answer)
-    key = user_data['account_hash']
-    return key
-
-
-async def main():
-    logger.setLevel(logging.DEBUG)
-    file_logger = logging.FileHandler('debug_log.txt', encoding='UTF-8')
-    file_logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
-    file_logger.setFormatter(formatter)
-    logger.addHandler(file_logger)
-    argparser = configargparse.ArgParser(default_config_files=['config.ini'])
-    argparser.add('-H', '--host', required=True, help='host')
-    argparser.add('-p', '--send_port', required=True, help='port to send messages')
-    argparser.add('-k,', '--key', help="user's account hash")
-    argparser.add('-n', help="user's nickname")
-    argparser.add('message', nargs='*', help='Текст сообщения', default='')
-    args, _ = argparser.parse_known_args()
-    async with get_connection(args.host, args.send_port) as connection:
-        reader, writer = connection
-        answer = await reader.readline()
-        logger.debug(f"recieved {answer.decode('UTF-8')}")
-        if args.n:
-            key = await register(reader, writer, args.n)
+    async def start_connection(self, watchdog_queue):
+        self.watchdog_queue = watchdog_queue
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+        if self.token:
+            await self.authenticate()
         else:
-            key = await authenticate(reader, writer, args.key)
-        args.key = key
-        argparser.write_config_file(args, ['config.ini'])
+            await self.register()
+  
+    async def send_empty_lines(self, num_lines=1):
+        text = ('\n' * num_lines)
+        self.writer.write(text.encode('UTF-8'))       
+        await self.writer.drain()
+        logger.debug(f"sent{text}")
 
-        await send_message(writer, args.message)
+    async def send_message(self, message):
+        text = " ".join(message)
+        self.writer.write(text.encode('UTF-8'))
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Message sent")
+        await self.send_empty_lines(2)
 
+    async def register(self):
+        await self.send_empty_lines()
+        answer = await self.reader.read(1000)
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Promt before auth")
+        logger.debug(f"recieved {answer.decode('UTF-8')}")
+        self.writer.write(fr"{self.name}".encode('UTF-8'))
+        await self.send_empty_lines()
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Name sent")
+        logger.debug(f"sent {self.name}")
+        await self.reader.readline()
+        answer = await self.reader.readline()
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Registration done")
+        logger.debug(f"recieved {answer.decode('UTF-8')}")
+        user_data = json.loads(answer)
+        self.token = user_data['account_hash']
+        self.nickname = user_data['nickname']
 
-if __name__ == '__main__':
-    asyncio.run(main())
+    async def authenticate(self):
+        await self.reader.readline()
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Promt before auth")
+        self.writer.write(self.token.encode('UTF-8'))
+        await self.send_empty_lines()
+        logger.debug(f"sent {self.token}")
+        answer = await self.reader.readline()
+        self.watchdog_queue.put_nowait(f"[{int(time.time())}] Connection is alive. Authorization done")
+        logger.debug(f"recieved {answer.decode('UTF-8')}")
+        user_data = json.loads(answer)
+        if not user_data:
+            raise WrongHash('Неизвестный токен. Проверьте его или зарегистрируйтесь заново')
+        self.token = user_data['account_hash']
+        self.nickname = user_data['nickname']
+
+    async def send_from_queue(self):
+        while True:
+            message = await self.send_queue.get()
+            await self.send_message(message)
