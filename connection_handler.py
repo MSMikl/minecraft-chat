@@ -41,13 +41,13 @@ async def watch_for_connection(writer, reader, watchdog_queue):
     timeouts = 0
     async with asyncio.TaskGroup() as tg:
         tg.create_task(ping_connection(writer, reader, watchdog_logger))
-        # tg.create_task(handle_watchdog_queue(watchdog_queue, watchdog_logger))
+        tg.create_task(handle_watchdog_queue(watchdog_queue, watchdog_logger))
 
 
 class ConnectionHandler:
-    def __init__(self, sender, reader, status_queue):
+    def __init__(self, sender, reciever, status_queue):
         self.sender = sender
-        self.reader = reader
+        self.reciever = reciever
         self.status_queue = status_queue
         self.watchdog_queue = asyncio.Queue()
         self.logger = logging.getLogger('watchdog')
@@ -60,7 +60,7 @@ class ConnectionHandler:
         self.status_queue.put_nowait(gui.SendingConnectionStateChanged('устанавливаем соединение'))
         self.status_queue.put_nowait(gui.ReadConnectionStateChanged('устанавливаем соединение'))
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(self.reader.start_connection(self.watchdog_queue))
+            tg.create_task(self.reciever.start_connection(self.watchdog_queue))
             tg.create_task(self.sender.start_connection(self.watchdog_queue))
         self.status_queue.put_nowait(gui.SendingConnectionStateChanged('соединение установлено'))
         self.status_queue.put_nowait(gui.ReadConnectionStateChanged('соединение установлено'))
@@ -82,11 +82,11 @@ class ConnectionHandler:
             try:
                 async with asyncio.TaskGroup() as tg:
                     send_task = tg.create_task(self.sender.send_from_queue())
-                    read_task = tg.create_task(self.reader.read_to_queues())
+                    read_task = tg.create_task(self.reciever.read_to_queues())
                     watchdog = tg.create_task(watch_for_connection(self.sender.writer, self.sender.reader, self.watchdog_queue))
             except* ConnectionError:
                 send_task.cancel()
                 read_task.cancel()
             finally:
-                await self.reader.cleanup()
+                await self.reciever.cleanup()
                 await self.sender.cleanup()
