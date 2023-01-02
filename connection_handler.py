@@ -21,27 +21,27 @@ async def ping_connection(writer, reader, logger):
         await asyncio.sleep(3)
 
 
-async def handle_watchdog_queue(queue, logger, timeouts=[0]):
+async def handle_watchdog_queue(queue, logger):
+    timeouts = 0
     while True:
         try:
             async with asyncio.timeout(2):
                 message = await queue.get()
                 logger.debug(message)
-                timeouts[0] = 0
+                timeouts = 0
         except TimeoutError:
             logger.debug(f"[{int(time.time())}] 2s timeout is expired")
-            timeouts[0] += 1
-            if timeouts[0] > 3:
+            timeouts += 1
+            if timeouts > 3:
                 logger.debug(f"[{int(time.time())}] No new messages. Trying to reconnect")
                 raise ConnectionError
 
 
 async def watch_for_connection(writer, reader, watchdog_queue):
     watchdog_logger = logging.getLogger('watchdog')
-    timeouts = [0]
     async with asyncio.TaskGroup() as tg:
         tg.create_task(ping_connection(writer, reader, watchdog_logger))
-        tg.create_task(handle_watchdog_queue(watchdog_queue, watchdog_logger, timeouts))
+        tg.create_task(handle_watchdog_queue(watchdog_queue, watchdog_logger))
 
 
 class ConnectionHandler:
