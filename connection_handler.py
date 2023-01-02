@@ -71,7 +71,6 @@ class ConnectionHandler:
             try:
                 await self.establish_connection()
             except Exception as ex_group:
-                print(ex_group.exceptions)
                 if ex_group.subgroup(WrongHash):
                     raise WrongHash()
                 elif ex_group.subgroup(socket.gaierror):

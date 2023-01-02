@@ -92,9 +92,10 @@ def main():
     except KeyboardInterrupt:
         sys.exit(0)
     finally:
-        config['CONNECTION']['key'] = sender.token
-        with open('config.ini', 'w') as configfile:
-            config.write(configfile)
+        if config['CONNECTION']['key'] != sender.token:
+            config['CONNECTION']['key'] = sender.token
+            with open('config.ini', 'w') as configfile:
+                config.write(configfile)
 
 
 if __name__ == '__main__':
