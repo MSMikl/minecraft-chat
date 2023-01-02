@@ -3,9 +3,9 @@ import logging
 import socket
 import time
 
-import gui
+from contextlib import asynccontextmanager
 
-from sender import WrongHash
+import gui
 
 
 async def ping_connection(writer, reader, logger):
@@ -55,37 +55,36 @@ class ConnectionHandler:
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
         self.logger.addHandler(stream_handler)
-
+    
+    @asynccontextmanager
     async def establish_connection(self):
-        self.status_queue.put_nowait(gui.SendingConnectionStateChanged('устанавливаем соединение'))
-        self.status_queue.put_nowait(gui.ReadConnectionStateChanged('устанавливаем соединение'))
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(self.reciever.start_connection(self.watchdog_queue))
-            tg.create_task(self.sender.start_connection(self.watchdog_queue))
-        self.status_queue.put_nowait(gui.SendingConnectionStateChanged('соединение установлено'))
-        self.status_queue.put_nowait(gui.ReadConnectionStateChanged('соединение установлено'))
-        self.status_queue.put_nowait(gui.NicknameReceived(self.sender.nickname))
+        try:
+            self.status_queue.put_nowait(gui.SendingConnectionStateChanged('устанавливаем соединение'))
+            self.status_queue.put_nowait(gui.ReadConnectionStateChanged('устанавливаем соединение'))
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(self.reciever.start_connection(self.watchdog_queue))
+                tg.create_task(self.sender.start_connection(self.watchdog_queue))
+            self.status_queue.put_nowait(gui.SendingConnectionStateChanged('соединение установлено'))
+            self.status_queue.put_nowait(gui.ReadConnectionStateChanged('соединение установлено'))
+            self.status_queue.put_nowait(gui.NicknameReceived(self.sender.nickname))
+            yield
+        finally:
+            await self.reciever.cleanup()
+            await self.sender.cleanup()
 
     async def handle_connection(self):
         while True:
             try:
-                await self.establish_connection()
-            except Exception as ex_group:
-                if ex_group.subgroup(WrongHash):
-                    raise WrongHash()
-                elif ex_group.subgroup(socket.gaierror):
+                async with self.establish_connection():
+                    try:
+                        async with asyncio.TaskGroup() as tg:
+                            send_task = tg.create_task(self.sender.send_from_queue())
+                            read_task = tg.create_task(self.reciever.read_to_queues())
+                            watchdog = tg.create_task(watch_for_connection(self.sender.writer, self.sender.reader, self.watchdog_queue))
+                    except* ConnectionError:
+                        send_task.cancel()
+                        read_task.cancel()
+            except ExceptionGroup as ex_group:
+                if ex_group.subgroup(socket.gaierror):
                     await asyncio.sleep(3)
                     continue
-                else:
-                    raise
-            try:
-                async with asyncio.TaskGroup() as tg:
-                    send_task = tg.create_task(self.sender.send_from_queue())
-                    read_task = tg.create_task(self.reciever.read_to_queues())
-                    watchdog = tg.create_task(watch_for_connection(self.sender.writer, self.sender.reader, self.watchdog_queue))
-            except* ConnectionError:
-                send_task.cancel()
-                read_task.cancel()
-            finally:
-                await self.reciever.cleanup()
-                await self.sender.cleanup()

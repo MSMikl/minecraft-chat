@@ -3,10 +3,6 @@ import asyncio
 import datetime
 import time
 
-import configargparse
-
-from gui import ReadConnectionStateChanged
-
 
 class Reciever:
     def __init__(self, host, port, *queues):
@@ -30,8 +26,9 @@ class Reciever:
                 queue.put_nowait(text_line)
 
     async def cleanup(self):
-        self.writer.close()
-        await self.writer.wait_closed()
+        if self.writer:
+            self.writer.close()
+            await self.writer.wait_closed()
 
 
 async def save_queue_to_file(queue, path='logs.txt'):

@@ -24,8 +24,9 @@ class Sender:
         self.watchdog_queue = None
 
     async def cleanup(self):
-        self.writer.close()
-        await self.writer.wait_closed()
+        if self.writer:
+            self.writer.close()
+            await self.writer.wait_closed()
 
     async def start_connection(self, watchdog_queue):
         self.watchdog_queue = watchdog_queue
