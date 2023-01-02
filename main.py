@@ -17,6 +17,31 @@ from startup_window import show_startup_window
 logger = logging.getLogger('chat')
 
 
+async def launch_messenger(
+    messages_queue,
+    sending_queue,
+    status_updates_queue,
+    history_queue,
+    handler,
+    sender,
+    reciever
+):
+    try:
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(gui.draw(messages_queue, sending_queue, status_updates_queue))
+            tg.create_task(save_queue_to_file(history_queue))
+            tg.create_task(handler.handle_connection())
+    except Exception as ex_group:
+        if ex_group.subgroup(gui.TkAppClosed):
+            raise
+        elif ex_group.subgroup(WrongHash):
+            messagebox.showerror('Неверный токен', 'Укажите корректный токен в файле конфигурации или удалите его для повторной регистрации')
+    finally:
+        async with asyncio.TaskGroup() as tg2:
+            tg2.create_task(sender.cleanup())
+            tg2.create_task(reciever.cleanup())
+
+
 def main():
     show_startup_window()
     logger.setLevel(logging.DEBUG)
@@ -54,24 +79,16 @@ def main():
         for line in file.readlines():
             messages_queue.put_nowait(line)
 
-    async def launch_messenger():
-        try:
-            async with asyncio.TaskGroup() as tg:
-                tg.create_task(gui.draw(messages_queue, sending_queue, status_updates_queue))
-                tg.create_task(save_queue_to_file(history_queue))
-                tg.create_task(handler.handle_connection())
-        except Exception as ex_group:
-            if ex_group.subgroup(gui.TkAppClosed):
-                raise
-            elif ex_group.subgroup(WrongHash):
-                messagebox.showerror('Неверный токен', 'Укажите корректный токен в файле конфигурации или удалите его для повторной регистрации')
-        finally:
-            async with asyncio.TaskGroup() as tg2:
-                tg2.create_task(sender.cleanup())
-                tg2.create_task(reciever.cleanup())
-
     try:
-        loop.run_until_complete(launch_messenger())
+        loop.run_until_complete(launch_messenger(
+            messages_queue,
+            sending_queue,
+            status_updates_queue,
+            history_queue,
+            handler,
+            sender,
+            reciever
+        ))
     except KeyboardInterrupt:
         sys.exit(0)
     finally:
