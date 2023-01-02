@@ -11,9 +11,9 @@ from sender import WrongHash
 async def ping_connection(writer, reader, logger):
     while True:
         writer.write('\n'.encode('UTF-8'))
-        await writer.drain()
         try:
             async with asyncio.timeout(3):
+                await writer.drain()
                 await reader.readline()
         except TimeoutError:
             logger.debug(f"[{int(time.time())}] No connection. Trying to reconnect")

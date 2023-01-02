@@ -35,7 +35,7 @@ class Reciever:
 
 
 async def save_queue_to_file(queue, path='logs.txt'):
-    while True:
-        line = await queue.get()
-        async with aiofiles.open(path, 'a') as file:
+    async with aiofiles.open(path, 'a') as file:
+        while True:
+            line = await queue.get()
             await file.write(line)
