@@ -1,3 +1,4 @@
+import copy
 import tkinter as tk
 
 import configparser
@@ -53,7 +54,7 @@ def show_startup_window():
         text='Запустить чат',
         command=lambda: save_and_launch(
             window,
-            config,
+            copy.deepcopy(config),
             name_value.get(),
             key_value.get(),
         )
