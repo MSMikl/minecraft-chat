@@ -6,7 +6,7 @@ import configparser
 from tkinter import ttk, messagebox
 
 
-def save_and_launch(window, config, name, key):
+def finalize_startup(window, config, name, key):
     if not (key or name):
         messagebox.showerror('Невозможно запустить чат', 'Укажите токен для входа или имя пользователя для регистрации')
         return
@@ -52,7 +52,7 @@ def show_startup_window():
     launch_button = ttk.Button(
         frame,
         text='Запустить чат',
-        command=lambda: save_and_launch(
+        command=lambda: finalize_startup(
             window,
             copy.deepcopy(config),
             name_value.get(),
